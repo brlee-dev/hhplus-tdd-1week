@@ -15,6 +15,8 @@ public class PointService {
     private final PointHistoryTable pointHistoryTable;
     private final Lock lock = new ReentrantLock();
 
+    private static final long MAX_POINT = 100_000L; // 최대 보유 포인트 한도
+
     public PointService(UserPointTable userPointTable, PointHistoryTable pointHistoryTable) {
         this.userPointTable = userPointTable;
         this.pointHistoryTable = pointHistoryTable;
@@ -30,6 +32,10 @@ public class PointService {
 
             UserPoint userPoint = userPointTable.selectById(userId);
             long newAmount = userPoint.amount() + amount;
+
+            if (newAmount > MAX_POINT) {
+                throw new IllegalArgumentException("최대 보유 포인트를 초과했습니다.");
+            }
 
             userPoint = userPointTable.insertOrUpdate(userId, newAmount);
             pointHistoryTable.insert(userId, amount, TransactionType.CHARGE, System.currentTimeMillis());
@@ -47,17 +53,17 @@ public class PointService {
             if (amount <= 0) {
                 throw new IllegalArgumentException("사용 금액은 0보다 커야 합니다.");
             }
-    
+
             UserPoint userPoint = userPointTable.selectById(userId);
             long newAmount = userPoint.amount() - amount;
-    
+
             if (newAmount < 0) {
                 throw new IllegalArgumentException("포인트 잔액이 부족합니다.");
             }
-    
+
             userPoint = userPointTable.insertOrUpdate(userId, newAmount);
             pointHistoryTable.insert(userId, amount, TransactionType.USE, System.currentTimeMillis());
-    
+
             return userPoint;
         } finally {
             lock.unlock();

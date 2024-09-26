@@ -2,6 +2,7 @@ package io.hhplus.tdd.point;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,49 +21,62 @@ public class PointController {
 
 
     /**
-     * TODO - 특정 유저의 포인트를 조회하는 기능을 작성해주세요.
+     * 특정 유저의 포인트를 조회하는 기능
      */
     @GetMapping("{id}")
-    public UserPoint point(
+    public ResponseEntity<UserPoint> point(
             @PathVariable long id
     ) {
         log.info("포인트 조회 요청 - 유저 ID: {}", id);
-        return pointService.getPoint(id);
+        UserPoint userPoint = pointService.getPoint(id);
+        return ResponseEntity.ok(userPoint);
     }
 
     /**
-     * TODO - 특정 유저의 포인트 충전/이용 내역을 조회하는 기능을 작성해주세요.
+     * 특정 유저의 포인트 충전/이용 내역을 조회하는 기능
      */
     @GetMapping("{id}/histories")
-    public List<PointHistory> history(
+    public ResponseEntity<List<PointHistory>> history(
             @PathVariable long id
     ) {
         log.info("포인트 내역 조회 요청 - 유저 ID: {}", id);
-        return pointService.getPointHistories(id);
+        List<PointHistory> histories = pointService.getPointHistories(id);
+        return ResponseEntity.ok(histories);
     }
 
     /**
-     * TODO - 특정 유저의 포인트를 충전하는 기능을 작성해주세요.
+     * 특정 유저의 포인트를 충전하는 기능
      */
     @PatchMapping("{id}/charge")
-    public UserPoint charge(
+    public ResponseEntity<?> charge(
             @PathVariable long id,
             @RequestBody long amount
     ) {
         log.info("포인트 충전 요청 - 유저 ID: {}, 금액: {}", id, amount);
-        return pointService.chargePoint(id, amount);
+        try {
+            UserPoint userPoint = pointService.chargePoint(id, amount);
+            return ResponseEntity.ok(userPoint);
+        } catch (IllegalArgumentException e) {
+            log.error("포인트 충전 실패 - 유저 ID: {}, 이유: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
-
     /**
-     * TODO - 특정 유저의 포인트를 사용하는 기능을 작성해주세요.
+     * 특정 유저의 포인트를 사용하는 기능
      */
     @PatchMapping("{id}/use")
-    public UserPoint use(
+    public ResponseEntity<?> use(
             @PathVariable long id,
             @RequestBody long amount
     ) {
         log.info("포인트 사용 요청 - 유저 ID: {}, 금액: {}", id, amount);
-        return pointService.usePoint(id, amount);
+        try {
+            UserPoint userPoint = pointService.usePoint(id, amount);
+            return ResponseEntity.ok(userPoint);
+        } catch (IllegalArgumentException e) {
+            log.error("포인트 사용 실패 - 유저 ID: {}, 이유: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
