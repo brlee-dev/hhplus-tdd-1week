@@ -13,17 +13,24 @@ public class PointService {
 
     private final UserPointTable userPointTable;
     private final PointHistoryTable pointHistoryTable;
-    private final Lock lock = new ReentrantLock();
 
     private static final long MAX_POINT = 100_000L; // 최대 보유 포인트 한도
+
+    private final ConcurrentHashMap<Long, ReentrantLock> userLocks = new ConcurrentHashMap<>();
 
     public PointService(UserPointTable userPointTable, PointHistoryTable pointHistoryTable) {
         this.userPointTable = userPointTable;
         this.pointHistoryTable = pointHistoryTable;
     }
 
+    private ReentrantLock getLock(long userId) {
+        userLocks.putIfAbsent(userId, new ReentrantLock());
+        return userLocks.get(userId);
+    }
+
     /** 포인트 충전 */
     public UserPoint chargePoint(long userId, long amount) {
+        ReentrantLock lock = getLock(userId);
         lock.lock();
         try {
             if (amount <= 0) {
@@ -48,6 +55,7 @@ public class PointService {
 
     /** 포인트 사용 */
     public UserPoint usePoint(long userId, long amount) {
+        ReentrantLock lock = getLock(userId);
         lock.lock();
         try {
             if (amount <= 0) {
