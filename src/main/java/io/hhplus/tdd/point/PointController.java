@@ -37,7 +37,8 @@ public class PointController {
     public List<PointHistory> history(
             @PathVariable long id
     ) {
-        return List.of();
+        log.info("포인트 내역 조회 요청 - 유저 ID: {}", id);
+        return pointService.getPointHistories(id);
     }
 
     /**
